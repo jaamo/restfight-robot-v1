@@ -198,33 +198,106 @@ function enemyInRange() {
  */
 class Pathfinder {
 
-    constructor(arena, startX, startY, destinationX, destinationY) {
+    constructor(arena) {
 
+        // Arena.
         this.arena = arena;
-        this.startX = startX;
-        this.startY = startY;
-        this.destinationX = destinationX;
-        this.destinationY = destinationY;
+
+        // All unfinished paths.
+        this.unresolvedPaths = [];
+        
+        // All paths.
+        this.resolvedPaths = [];
+        
+        // Current shortest path.
+        this.shortestPath = false;
+
+        // Hard coded max path length.
+        this.maxPathLength = 20;
 
     }
 
-    nextStep(x, y, path, enemyId, depth) {
+    /**
+     * Return a shortest route from point a to point b.
+     * 
+     * @param {*} fromX 
+     * @param {*} fromY 
+     * @param {*} toX 
+     * @param {*} toY 
+     */
+    find(fromX, fromY, toX, toY) {
 
-        console.log("\n\n");
-        console.log(path);
+        this.toX = toX;
+        this.toY = toY;
+        const maxIterations = 10000000;
+        let iterations = 0;
+
+        // Add first path to unresolved paths.
+        this.unresolvedPaths.push([{x: fromX, y: fromY}]);
+
+        const start = (new Date()).getTime();
+
+        // Loop as long as we have paths.
+        while (this.unresolvedPaths.length > 0) {
+
+            // console.log('We currently have ' + this.unresolvedPaths.length + ' paths to resolve.');
+
+            // Pop out the last path.
+            let path = this.unresolvedPaths.shift();
+
+            // Resolve path.
+            let success = this.nextStep(path, 0);
+
+            // UUUJEAH! We found a path and it's shorted that what we have atm.
+            if (success && (this.shortestPath == false || path.length < this.shortestPath.length)) {
+                this.shortestPath = path;
+            }
+
+            // Add to resolved.
+            this.resolvedPaths.push(path);
+
+            if (++iterations == maxIterations) {
+                return;
+            }
+            
+        }
+
+        const end = (new Date()).getTime();
+
+        console.log('Paths resolved: ' + this.resolvedPaths.length);        
+        console.log('Time elapsed: ' + Math.round((end - start) / 1000) + ' seconds');
+        console.log('Shortest path: ');
+        console.log(this.shortestPath);
+
+    }
+
+    /**
+     * Process next step.
+     * 
+     * @param {*} path 
+     * @param {*} depth 
+     */
+    nextStep(path, depth) {
 
         if (depth > 100) {
             console.log('Max depth exceed.');
-            return;
+            return false;
         }
 
-        // Add to path and continue.
-        path.push({x: x, y: y});
+        // We have already found a succesful shorted path. No point to continue this path.
+        if (path.length > this.maxPathLength || (this.shortestPath != false && path.length > this.shortestPath.length)) {
+            // console.log('Path too long (' + path.length + ', shortest is ' + this.shortestPath.length + '), resolving cancelled.');
+            return false;
+        }
+
+        // Take latest item out from the current path.
+        const x = path[path.length - 1].x;
+        const y = path[path.length - 1].y;
 
         // Enemy found?
-        if (this.arena[x][y].type == 1 && this.arena[x][y].robot.robot_id == enemyId) {
-            console.log("FOUND ENEMY AT LOCATION " + x + " x " + y);
-            return;
+        if (x == this.toX && y == this.toY) {
+            // console.log("Found target at location " + x + " x " + y + ". Path length " + path.length);
+            return true;
         }
 
         // Get all possible alternatives.
@@ -232,23 +305,42 @@ class Pathfinder {
 
         // Nothing found. Dead end.
         if (alternatives.length == 0) {
-            console.log("Dead end");
-            return;
+            // console.log("Dead end");
+            return false;
         }
-
+        
         // Pick the first one.
         let nextPoint = alternatives.shift();
 
+        // Add other alternatives as new paths.
+        alternatives.forEach((alternative) => {
+
+            // Deep clone current path.
+            let newPath = JSON.parse(JSON.stringify(path));
+
+            // Add new alternative and add to unresolved list.
+            newPath.push(alternative);
+            this.unresolvedPaths.push(newPath);
+
+            // console.log(newPath);
+
+        })
+
+        // Add point to path.
+        path.push(nextPoint);
+
         // Recursively continue traversing.
-        this.nextStep(nextPoint.x, nextPoint.y, path, enemyId, ++depth);
+        return this.nextStep(path, ++depth);
 
     }
 
     /**
-     * Get possible directions around given point.
+     * Get possible directions around given point. 
+     * Current path is required to prevent path "crossing itself".
      * 
      * @param {*} x 
      * @param {*} y 
+     * @param {*} path
      */
     getAlternatives(x, y, path) {
 
@@ -292,7 +384,5 @@ class Pathfinder {
 // let arena = [[{"type":1,"x":0,"y":0,"robot":{"robot_id":1526404745787585981,"robot_index":0,"shield_level":1,"health":10,"max_health":10,"capacity":0,"max_capacity":10,"x":0,"y":0,"engine_level":1,"max_moves":4,"moves":4,"weapon_level":0,"weapon_range":2,"weapon_power":2,"weapon_ammo":1}},{"type":0,"x":0,"y":1,"robot":null},{"type":0,"x":0,"y":2,"robot":null},{"type":0,"x":0,"y":3,"robot":null},{"type":0,"x":0,"y":4,"robot":null},{"type":0,"x":0,"y":5,"robot":null},{"type":0,"x":0,"y":6,"robot":null},{"type":0,"x":0,"y":7,"robot":null},{"type":0,"x":0,"y":8,"robot":null},{"type":0,"x":0,"y":9,"robot":null}],[{"type":0,"x":1,"y":0,"robot":null},{"type":0,"x":1,"y":1,"robot":null},{"type":0,"x":1,"y":2,"robot":null},{"type":0,"x":1,"y":3,"robot":null},{"type":0,"x":1,"y":4,"robot":null},{"type":0,"x":1,"y":5,"robot":null},{"type":0,"x":1,"y":6,"robot":null},{"type":0,"x":1,"y":7,"robot":null},{"type":0,"x":1,"y":8,"robot":null},{"type":0,"x":1,"y":9,"robot":null}],[{"type":0,"x":2,"y":0,"robot":null},{"type":0,"x":2,"y":1,"robot":null},{"type":0,"x":2,"y":2,"robot":null},{"type":0,"x":2,"y":3,"robot":null},{"type":0,"x":2,"y":4,"robot":null},{"type":0,"x":2,"y":5,"robot":null},{"type":0,"x":2,"y":6,"robot":null},{"type":0,"x":2,"y":7,"robot":null},{"type":0,"x":2,"y":8,"robot":null},{"type":0,"x":2,"y":9,"robot":null}],[{"type":0,"x":3,"y":0,"robot":null},{"type":2,"x":3,"y":1,"robot":null},{"type":2,"x":3,"y":2,"robot":null},{"type":2,"x":3,"y":3,"robot":null},{"type":0,"x":3,"y":4,"robot":null},{"type":0,"x":3,"y":5,"robot":null},{"type":0,"x":3,"y":6,"robot":null},{"type":0,"x":3,"y":7,"robot":null},{"type":0,"x":3,"y":8,"robot":null},{"type":0,"x":3,"y":9,"robot":null}],[{"type":0,"x":4,"y":0,"robot":null},{"type":0,"x":4,"y":1,"robot":null},{"type":0,"x":4,"y":2,"robot":null},{"type":0,"x":4,"y":3,"robot":null},{"type":0,"x":4,"y":4,"robot":null},{"type":0,"x":4,"y":5,"robot":null},{"type":0,"x":4,"y":6,"robot":null},{"type":0,"x":4,"y":7,"robot":null},{"type":0,"x":4,"y":8,"robot":null},{"type":0,"x":4,"y":9,"robot":null}],[{"type":0,"x":5,"y":0,"robot":null},{"type":0,"x":5,"y":1,"robot":null},{"type":0,"x":5,"y":2,"robot":null},{"type":0,"x":5,"y":3,"robot":null},{"type":0,"x":5,"y":4,"robot":null},{"type":0,"x":5,"y":5,"robot":null},{"type":0,"x":5,"y":6,"robot":null},{"type":0,"x":5,"y":7,"robot":null},{"type":0,"x":5,"y":8,"robot":null},{"type":0,"x":5,"y":9,"robot":null}],[{"type":0,"x":6,"y":0,"robot":null},{"type":0,"x":6,"y":1,"robot":null},{"type":0,"x":6,"y":2,"robot":null},{"type":0,"x":6,"y":3,"robot":null},{"type":0,"x":6,"y":4,"robot":null},{"type":0,"x":6,"y":5,"robot":null},{"type":2,"x":6,"y":6,"robot":null},{"type":2,"x":6,"y":7,"robot":null},{"type":2,"x":6,"y":8,"robot":null},{"type":0,"x":6,"y":9,"robot":null}],[{"type":0,"x":7,"y":0,"robot":null},{"type":0,"x":7,"y":1,"robot":null},{"type":0,"x":7,"y":2,"robot":null},{"type":0,"x":7,"y":3,"robot":null},{"type":0,"x":7,"y":4,"robot":null},{"type":0,"x":7,"y":5,"robot":null},{"type":0,"x":7,"y":6,"robot":null},{"type":0,"x":7,"y":7,"robot":null},{"type":0,"x":7,"y":8,"robot":null},{"type":0,"x":7,"y":9,"robot":null}],[{"type":0,"x":8,"y":0,"robot":null},{"type":0,"x":8,"y":1,"robot":null},{"type":0,"x":8,"y":2,"robot":null},{"type":0,"x":8,"y":3,"robot":null},{"type":0,"x":8,"y":4,"robot":null},{"type":0,"x":8,"y":5,"robot":null},{"type":0,"x":8,"y":6,"robot":null},{"type":0,"x":8,"y":7,"robot":null},{"type":0,"x":8,"y":8,"robot":null},{"type":0,"x":8,"y":9,"robot":null}],[{"type":0,"x":9,"y":0,"robot":null},{"type":0,"x":9,"y":1,"robot":null},{"type":0,"x":9,"y":2,"robot":null},{"type":0,"x":9,"y":3,"robot":null},{"type":0,"x":9,"y":4,"robot":null},{"type":0,"x":9,"y":5,"robot":null},{"type":0,"x":9,"y":6,"robot":null},{"type":0,"x":9,"y":7,"robot":null},{"type":0,"x":9,"y":8,"robot":null},{"type":1,"x":9,"y":9,"robot":{"robot_id":1527356902469459472,"robot_index":1,"shield_level":0,"health":6,"max_health":6,"capacity":0,"max_capacity":10,"x":9,"y":9,"engine_level":1,"max_moves":4,"moves":4,"weapon_level":1,"weapon_range":4,"weapon_power":4,"weapon_ammo":1}}]];
 let arena = [[{"type":1,"x":0,"y":0,"robot":{"robot_id":1526404745787585981,"robot_index":0,"shield_level":1,"health":10,"max_health":10,"capacity":0,"max_capacity":10,"x":0,"y":0,"engine_level":1,"max_moves":4,"moves":4,"weapon_level":0,"weapon_range":2,"weapon_power":2,"weapon_ammo":1}},{"type":0,"x":0,"y":1,"robot":null},{"type":0,"x":0,"y":2,"robot":null},{"type":0,"x":0,"y":3,"robot":null},{"type":0,"x":0,"y":4,"robot":null},{"type":0,"x":0,"y":5,"robot":null},{"type":0,"x":0,"y":6,"robot":null},{"type":0,"x":0,"y":7,"robot":null},{"type":0,"x":0,"y":8,"robot":null},{"type":0,"x":0,"y":9,"robot":null}],[{"type":0,"x":1,"y":0,"robot":null},{"type":0,"x":1,"y":1,"robot":null},{"type":0,"x":1,"y":2,"robot":null},{"type":0,"x":1,"y":3,"robot":null},{"type":0,"x":1,"y":4,"robot":null},{"type":0,"x":1,"y":5,"robot":null},{"type":0,"x":1,"y":6,"robot":null},{"type":0,"x":1,"y":7,"robot":null},{"type":0,"x":1,"y":8,"robot":null},{"type":0,"x":1,"y":9,"robot":null}],[{"type":0,"x":2,"y":0,"robot":null},{"type":0,"x":2,"y":1,"robot":null},{"type":0,"x":2,"y":2,"robot":null},{"type":0,"x":2,"y":3,"robot":null},{"type":0,"x":2,"y":4,"robot":null},{"type":0,"x":2,"y":5,"robot":null},{"type":0,"x":2,"y":6,"robot":null},{"type":0,"x":2,"y":7,"robot":null},{"type":0,"x":2,"y":8,"robot":null},{"type":0,"x":2,"y":9,"robot":null}],[{"type":0,"x":3,"y":0,"robot":null},{"type":0,"x":3,"y":1,"robot":null},{"type":0,"x":3,"y":2,"robot":null},{"type":0,"x":3,"y":3,"robot":null},{"type":0,"x":3,"y":4,"robot":null},{"type":0,"x":3,"y":5,"robot":null},{"type":0,"x":3,"y":6,"robot":null},{"type":0,"x":3,"y":7,"robot":null},{"type":0,"x":3,"y":8,"robot":null},{"type":0,"x":3,"y":9,"robot":null}],[{"type":0,"x":4,"y":0,"robot":null},{"type":0,"x":4,"y":1,"robot":null},{"type":0,"x":4,"y":2,"robot":null},{"type":0,"x":4,"y":3,"robot":null},{"type":0,"x":4,"y":4,"robot":null},{"type":0,"x":4,"y":5,"robot":null},{"type":0,"x":4,"y":6,"robot":null},{"type":0,"x":4,"y":7,"robot":null},{"type":0,"x":4,"y":8,"robot":null},{"type":0,"x":4,"y":9,"robot":null}],[{"type":0,"x":5,"y":0,"robot":null},{"type":0,"x":5,"y":1,"robot":null},{"type":0,"x":5,"y":2,"robot":null},{"type":0,"x":5,"y":3,"robot":null},{"type":0,"x":5,"y":4,"robot":null},{"type":0,"x":5,"y":5,"robot":null},{"type":0,"x":5,"y":6,"robot":null},{"type":0,"x":5,"y":7,"robot":null},{"type":0,"x":5,"y":8,"robot":null},{"type":0,"x":5,"y":9,"robot":null}],[{"type":0,"x":6,"y":0,"robot":null},{"type":0,"x":6,"y":1,"robot":null},{"type":0,"x":6,"y":2,"robot":null},{"type":0,"x":6,"y":3,"robot":null},{"type":0,"x":6,"y":4,"robot":null},{"type":0,"x":6,"y":5,"robot":null},{"type":0,"x":6,"y":6,"robot":null},{"type":0,"x":6,"y":7,"robot":null},{"type":0,"x":6,"y":8,"robot":null},{"type":0,"x":6,"y":9,"robot":null}],[{"type":0,"x":7,"y":0,"robot":null},{"type":0,"x":7,"y":1,"robot":null},{"type":0,"x":7,"y":2,"robot":null},{"type":0,"x":7,"y":3,"robot":null},{"type":0,"x":7,"y":4,"robot":null},{"type":0,"x":7,"y":5,"robot":null},{"type":0,"x":7,"y":6,"robot":null},{"type":0,"x":7,"y":7,"robot":null},{"type":0,"x":7,"y":8,"robot":null},{"type":0,"x":7,"y":9,"robot":null}],[{"type":0,"x":8,"y":0,"robot":null},{"type":0,"x":8,"y":1,"robot":null},{"type":0,"x":8,"y":2,"robot":null},{"type":0,"x":8,"y":3,"robot":null},{"type":0,"x":8,"y":4,"robot":null},{"type":0,"x":8,"y":5,"robot":null},{"type":0,"x":8,"y":6,"robot":null},{"type":0,"x":8,"y":7,"robot":null},{"type":0,"x":8,"y":8,"robot":null},{"type":0,"x":8,"y":9,"robot":null}],[{"type":0,"x":9,"y":0,"robot":null},{"type":0,"x":9,"y":1,"robot":null},{"type":0,"x":9,"y":2,"robot":null},{"type":0,"x":9,"y":3,"robot":null},{"type":0,"x":9,"y":4,"robot":null},{"type":0,"x":9,"y":5,"robot":null},{"type":0,"x":9,"y":6,"robot":null},{"type":0,"x":9,"y":7,"robot":null},{"type":0,"x":9,"y":8,"robot":null},{"type":1,"x":9,"y":9,"robot":{"robot_id":1527356902469459472,"robot_index":1,"shield_level":0,"health":6,"max_health":6,"capacity":0,"max_capacity":10,"x":9,"y":9,"engine_level":1,"max_moves":4,"moves":4,"weapon_level":1,"weapon_range":4,"weapon_power":4,"weapon_ammo":1}}]];
 
-let pathfinder = new Pathfinder(arena, 0, 0, 9, 9);
-
-// console.log(pathfinder.getAlternatives(0, 0, [{x:1,y:1}]));
-pathfinder.nextStep(0, 0, [], 1527356902469459472, 0);
+let pathfinder = new Pathfinder(arena);
+pathfinder.find(0, 0, 5, 5);
