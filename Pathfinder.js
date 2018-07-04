@@ -1,6 +1,7 @@
 
 /**
- * Find the shortest path between two points.
+ * Find the shortest path between two points. Brute force algrorithm from my head.
+ * Can be veeeeery slow.
  * 
  * Usage:
  * 
@@ -39,7 +40,7 @@ module.exports = class Pathfinder {
         this.shortestPath = false;
 
         // Hard coded max path length.
-        this.maxPathLength = 20;
+        this.maxPathLength = 30;
 
     }
 
@@ -66,7 +67,7 @@ module.exports = class Pathfinder {
         // Loop as long as we have paths.
         while (this.unresolvedPaths.length > 0) {
 
-            // console.log('We currently have ' + this.unresolvedPaths.length + ' paths to resolve.');
+            console.log('We currently have ' + this.unresolvedPaths.length + ' paths to resolve. Shortest path at the moment: ' + (this.shortestPath ? this.shortestPath.length : 'N/A'));
 
             // Pop out the last path.
             let path = this.unresolvedPaths.shift();
@@ -77,6 +78,12 @@ module.exports = class Pathfinder {
             // UUUJEAH! We found a path and it's shorted that what we have atm.
             if (success && (this.shortestPath == false || path.length < this.shortestPath.length)) {
                 this.shortestPath = path;
+            }
+
+            // Ooooookeeee so we have shortest path and seems that we have shit load of unresolved paths.
+            // What if we just fuck off?
+            if (this.shortestPath && this.unresolvedPaths.length > 10000) {
+                break;
             }
 
             // Add to resolved.
@@ -94,6 +101,7 @@ module.exports = class Pathfinder {
         console.log('Time elapsed: ' + Math.round((end - start) / 1000) + ' seconds');
         console.log('Shortest path: ');
         console.log(this.shortestPath);
+        return this.shortestPath;
 
     }
 
@@ -110,7 +118,7 @@ module.exports = class Pathfinder {
             return false;
         }
 
-        // We have already found a succesful shorted path. No point to continue this path.
+        // We have already found a succesful shorter path. No point to continue this path.
         if (path.length > this.maxPathLength || (this.shortestPath != false && path.length > this.shortestPath.length)) {
             // console.log('Path too long (' + path.length + ', shortest is ' + this.shortestPath.length + '), resolving cancelled.');
             return false;

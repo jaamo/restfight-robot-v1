@@ -15,7 +15,9 @@ module.exports = class BaseBot {
 
         // Init variables.
         this.robotId = 0;
-        this.status = [];      
+        this.status = [];    
+        
+        this.init();
 
     }    
 
@@ -69,7 +71,7 @@ module.exports = class BaseBot {
                 } else {
                     setTimeout(() => {
                         this.waitForTurn();
-                    }, 5000)
+                    }, 1000)
                 }
 
             });
@@ -102,6 +104,14 @@ module.exports = class BaseBot {
 
 
     //
+    // Do whatever init stuff you want to do like init variables etc.
+    //
+    init() {
+
+    }
+
+
+    //
     // This is the actual logic executed when playing your turn. Just do your stuff 
     // and whenever you are done call `this.endTurn()` method.
     //
@@ -127,6 +137,33 @@ module.exports = class BaseBot {
             });
         });
 
+    }
+
+
+    // 
+    // Move.
+    //
+    move(x, y) {
+
+        return new Promise((resolve, reject) => {
+
+            let coords = {
+                robot_id: this.robotId,
+                x: x,
+                y: y
+            }
+        
+            fetch(this.baseUrl + 'move?' + querystring.stringify(coords)).then((response) => {
+                if (response.status == 200) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            });
+    
+        });
+
+        
     }
 
 }
