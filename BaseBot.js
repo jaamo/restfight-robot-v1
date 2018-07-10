@@ -153,7 +153,38 @@ module.exports = class BaseBot {
                 y: y
             }
         
+            console.log(this.baseUrl + 'move?' + querystring.stringify(coords));
+
             fetch(this.baseUrl + 'move?' + querystring.stringify(coords)).then((response) => {
+                if (response.status == 200) {
+                    resolve();
+                } else {
+                    response.text().then(text => {
+                        console.log(text);
+                    });        
+                    reject();
+                }
+            });
+    
+        });
+  
+    }
+
+
+    // 
+    // Shoot.
+    //
+    shoot(x, y) {
+
+        return new Promise((resolve, reject) => {
+
+            let coords = {
+                robot_id: this.robotId,
+                x: x,
+                y: y
+            }
+        
+            fetch(this.baseUrl + 'shoot?' + querystring.stringify(coords)).then((response) => {
                 if (response.status == 200) {
                     resolve();
                 } else {
@@ -162,8 +193,8 @@ module.exports = class BaseBot {
             });
     
         });
-
-        
+  
     }
+
 
 }

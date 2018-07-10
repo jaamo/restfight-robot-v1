@@ -1,0 +1,26 @@
+#!/bin/bash
+# Simple debug script to reset the game and throw in two robots.
+
+curl http://127.0.0.1:8000/new
+node index.js &
+sleep 1
+node index.js &
+
+read -p "Press enter to stop"
+
+pkill node index.js
+
+
+# if [ "$1" == "start" ] 
+# then
+#     curl http://127.0.0.1:8000/new
+#     node index.js &
+#     sleep 1
+#     node index.js &
+# fi
+
+# if [ "$1" == "stop" ] 
+# then
+#     pkill node index.js
+# fi
+

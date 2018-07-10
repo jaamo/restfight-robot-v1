@@ -198,7 +198,7 @@ module.exports = class Pathfinder2 {
         // Point is not available.
         return typeof(this.arena[y]) != 'undefined' 
             && typeof(this.arena[y][x]) != "undefined"
-            && this.arena[y][x].type == 0
+            && (this.arena[y][x].type == 0 || this.arena[y][x].type == 1)
             && matches.length == 0;
 
     }
